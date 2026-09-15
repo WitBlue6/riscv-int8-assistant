@@ -1,0 +1,452 @@
+{
+  "all_passed": true,
+  "rtl_generation_cases": 25,
+  "firmware_variants": 3,
+  "invalid_prompt_cases": 3,
+  "max_new_limit_firmware_passed": true,
+  "training_reconstruction": "8/8",
+  "comparison": "Every generated logit/token, state and projection hashes vs independent Python; every accelerator raw output also checked by RV32 C in checked firmware.",
+  "timing_scope": "CPU rdcycle windows cover prompt prefill and autoregressive decode, including memory copies, attention, norms, linear layers and diagnostics; excludes prompt UTF8 parsing and JSON output. Fast variant disables duplicate CPU MAC verification. Zero-wait simulated RAM; no silicon Fmax claim.",
+  "weights_sha256": "eff54fbfc0647be2f51e565ecd74a3df0616fe8e27b5ab462b35bde6ee296a5e",
+  "limitations": "Training corpus reconstruction is not held-out accuracy or general chat quality.",
+  "cases": [
+    {
+      "prompt": "你好：",
+      "text": "你好！",
+      "tokens": [
+        10,
+        15,
+        35,
+        0
+      ],
+      "stop_reason": "eos",
+      "forward_tokens": 7,
+      "checked_mac_results": 1043,
+      "fast_cycles": 368543,
+      "cpu_cycles": 565110,
+      "full_inference_speedup": 1.5333624570267241,
+      "accelerator_cycles": 4620
+    },
+    {
+      "prompt": "你是谁：",
+      "text": "我是小助手。",
+      "tokens": [
+        19,
+        23,
+        18,
+        13,
+        20,
+        3,
+        0
+      ],
+      "stop_reason": "eos",
+      "forward_tokens": 11,
+      "checked_mac_results": 1639,
+      "fast_cycles": 598774,
+      "cpu_cycles": 907775,
+      "full_inference_speedup": 1.5160561413822244,
+      "accelerator_cycles": 7260
+    },
+    {
+      "prompt": "再见：",
+      "text": "再见！",
+      "tokens": [
+        11,
+        30,
+        35,
+        0
+      ],
+      "stop_reason": "eos",
+      "forward_tokens": 7,
+      "checked_mac_results": 1043,
+      "fast_cycles": 368543,
+      "cpu_cycles": 565110,
+      "full_inference_speedup": 1.5333624570267241,
+      "accelerator_cycles": 4620
+    },
+    {
+      "prompt": "谢谢：",
+      "text": "不客气。",
+      "tokens": [
+        5,
+        17,
+        26,
+        3,
+        0
+      ],
+      "stop_reason": "eos",
+      "forward_tokens": 8,
+      "checked_mac_results": 1192,
+      "fast_cycles": 425406,
+      "cpu_cycles": 650074,
+      "full_inference_speedup": 1.5281260725048542,
+      "accelerator_cycles": 5280
+    },
+    {
+      "prompt": "早上好：",
+      "text": "早上好！",
+      "tokens": [
+        22,
+        4,
+        15,
+        35,
+        0
+      ],
+      "stop_reason": "eos",
+      "forward_tokens": 9,
+      "checked_mac_results": 1341,
+      "fast_cycles": 481271,
+      "cpu_cycles": 734045,
+      "full_inference_speedup": 1.5252217565571164,
+      "accelerator_cycles": 5940
+    },
+    {
+      "prompt": "晚上好：",
+      "text": "晚上好！",
+      "tokens": [
+        24,
+        4,
+        15,
+        35,
+        0
+      ],
+      "stop_reason": "eos",
+      "forward_tokens": 9,
+      "checked_mac_results": 1341,
+      "fast_cycles": 481318,
+      "cpu_cycles": 734092,
+      "full_inference_speedup": 1.525170469419386,
+      "accelerator_cycles": 5940
+    },
+    {
+      "prompt": "你会什么：",
+      "text": "我会接着写字。",
+      "tokens": [
+        19,
+        9,
+        21,
+        28,
+        12,
+        16,
+        3,
+        0
+      ],
+      "stop_reason": "eos",
+      "forward_tokens": 13,
+      "checked_mac_results": 1937,
+      "fast_cycles": 718050,
+      "cpu_cycles": 1083298,
+      "full_inference_speedup": 1.5086665274005988,
+      "accelerator_cycles": 8580
+    },
+    {
+      "prompt": "介绍项目：",
+      "text": "这是小模型。",
+      "tokens": [
+        33,
+        23,
+        18,
+        25,
+        14,
+        3,
+        0
+      ],
+      "stop_reason": "eos",
+      "forward_tokens": 12,
+      "checked_mac_results": 1788,
+      "fast_cycles": 657246,
+      "cpu_cycles": 994368,
+      "full_inference_speedup": 1.5129312312284897,
+      "accelerator_cycles": 7920
+    },
+    {
+      "prompt": "你好",
+      "text": "！",
+      "tokens": [
+        35,
+        0
+      ],
+      "stop_reason": "eos",
+      "forward_tokens": 4,
+      "checked_mac_results": 596,
+      "fast_cycles": 205173,
+      "cpu_cycles": 317467,
+      "full_inference_speedup": 1.5473137303641318,
+      "accelerator_cycles": 2640
+    },
+    {
+      "prompt": "你",
+      "text": "。写字。",
+      "tokens": [
+        3,
+        12,
+        16,
+        3,
+        0
+      ],
+      "stop_reason": "eos",
+      "forward_tokens": 6,
+      "checked_mac_results": 894,
+      "fast_cycles": 315994,
+      "cpu_cycles": 484465,
+      "full_inference_speedup": 1.5331461989784616,
+      "accelerator_cycles": 3960
+    },
+    {
+      "prompt": "我",
+      "text": "会接着写字。",
+      "tokens": [
+        9,
+        21,
+        28,
+        12,
+        16,
+        3,
+        0
+      ],
+      "stop_reason": "eos",
+      "forward_tokens": 8,
+      "checked_mac_results": 1192,
+      "fast_cycles": 428600,
+      "cpu_cycles": 653268,
+      "full_inference_speedup": 1.5241903873075129,
+      "accelerator_cycles": 5280
+    },
+    {
+      "prompt": "：",
+      "text": "再",
+      "tokens": [
+        11,
+        0
+      ],
+      "stop_reason": "eos",
+      "forward_tokens": 3,
+      "checked_mac_results": 447,
+      "fast_cycles": 153438,
+      "cpu_cycles": 237651,
+      "full_inference_speedup": 1.5488405740429358,
+      "accelerator_cycles": 1980
+    },
+    {
+      "prompt": "你好：你",
+      "text": "好！",
+      "tokens": [
+        15,
+        35,
+        0
+      ],
+      "stop_reason": "eos",
+      "forward_tokens": 7,
+      "checked_mac_results": 1043,
+      "fast_cycles": 366881,
+      "cpu_cycles": 563448,
+      "full_inference_speedup": 1.5357786312182968,
+      "accelerator_cycles": 4620
+    },
+    {
+      "prompt": "谢谢：不",
+      "text": "客气。",
+      "tokens": [
+        17,
+        26,
+        3,
+        0
+      ],
+      "stop_reason": "eos",
+      "forward_tokens": 8,
+      "checked_mac_results": 1192,
+      "fast_cycles": 423752,
+      "cpu_cycles": 648420,
+      "full_inference_speedup": 1.5301874681417433,
+      "accelerator_cycles": 5280
+    },
+    {
+      "prompt": "你你你你你你你你你你你你你你你你你你你你你你你你你你你你你你",
+      "text": "。",
+      "tokens": [
+        3,
+        0
+      ],
+      "stop_reason": "eos",
+      "forward_tokens": 32,
+      "checked_mac_results": 4768,
+      "fast_cycles": 1992589,
+      "cpu_cycles": 2893181,
+      "full_inference_speedup": 1.4519707777168298,
+      "accelerator_cycles": 21120
+    },
+    {
+      "prompt": "不介晚你不不",
+      "text": "客气。",
+      "tokens": [
+        17,
+        26,
+        3,
+        0
+      ],
+      "stop_reason": "eos",
+      "forward_tokens": 10,
+      "checked_mac_results": 1490,
+      "fast_cycles": 536290,
+      "cpu_cycles": 817175,
+      "full_inference_speedup": 1.5237558037628895,
+      "accelerator_cycles": 6600
+    },
+    {
+      "prompt": "早上好",
+      "text": "！",
+      "tokens": [
+        35,
+        0
+      ],
+      "stop_reason": "eos",
+      "forward_tokens": 5,
+      "checked_mac_results": 745,
+      "fast_cycles": 257739,
+      "cpu_cycles": 398119,
+      "full_inference_speedup": 1.5446595199019162,
+      "accelerator_cycles": 3300
+    },
+    {
+      "prompt": "早上好 ",
+      "text": "模型。",
+      "tokens": [
+        25,
+        14,
+        3,
+        0
+      ],
+      "stop_reason": "eos",
+      "forward_tokens": 8,
+      "checked_mac_results": 1192,
+      "fast_cycles": 423668,
+      "cpu_cycles": 648336,
+      "full_inference_speedup": 1.5302925875921711,
+      "accelerator_cycles": 5280
+    },
+    {
+      "prompt": "早上好\n",
+      "text": "模型。",
+      "tokens": [
+        25,
+        14,
+        3,
+        0
+      ],
+      "stop_reason": "eos",
+      "forward_tokens": 8,
+      "checked_mac_results": 1192,
+      "fast_cycles": 423668,
+      "cpu_cycles": 648336,
+      "full_inference_speedup": 1.5302925875921711,
+      "accelerator_cycles": 5280
+    },
+    {
+      "prompt": "早上好,",
+      "text": "模型。",
+      "tokens": [
+        25,
+        14,
+        3,
+        0
+      ],
+      "stop_reason": "eos",
+      "forward_tokens": 8,
+      "checked_mac_results": 1192,
+      "fast_cycles": 423668,
+      "cpu_cycles": 648336,
+      "full_inference_speedup": 1.5302925875921711,
+      "accelerator_cycles": 5280
+    },
+    {
+      "prompt": "天气怎么样",
+      "text": "上好！",
+      "tokens": [
+        4,
+        15,
+        35,
+        0
+      ],
+      "stop_reason": "eos",
+      "forward_tokens": 9,
+      "checked_mac_results": 1341,
+      "fast_cycles": 479528,
+      "cpu_cycles": 732302,
+      "full_inference_speedup": 1.5271308453312424,
+      "accelerator_cycles": 5940
+    },
+    {
+      "prompt": "随便说说",
+      "text": "会客会接着写！",
+      "tokens": [
+        9,
+        17,
+        9,
+        21,
+        28,
+        12,
+        35,
+        0
+      ],
+      "stop_reason": "eos",
+      "forward_tokens": 12,
+      "checked_mac_results": 1788,
+      "fast_cycles": 658893,
+      "cpu_cycles": 996015,
+      "full_inference_speedup": 1.5116490841456807,
+      "accelerator_cycles": 7920
+    },
+    {
+      "prompt": "🙂",
+      "text": "会接着写字。",
+      "tokens": [
+        9,
+        21,
+        28,
+        12,
+        16,
+        3,
+        0
+      ],
+      "stop_reason": "eos",
+      "forward_tokens": 8,
+      "checked_mac_results": 1192,
+      "fast_cycles": 428624,
+      "cpu_cycles": 653292,
+      "full_inference_speedup": 1.5241610362462206,
+      "accelerator_cycles": 5280
+    },
+    {
+      "prompt": "hello",
+      "text": "客型。",
+      "tokens": [
+        17,
+        14,
+        3,
+        0
+      ],
+      "stop_reason": "eos",
+      "forward_tokens": 9,
+      "checked_mac_results": 1341,
+      "fast_cycles": 479518,
+      "cpu_cycles": 732292,
+      "full_inference_speedup": 1.5271418382625888,
+      "accelerator_cycles": 5940
+    },
+    {
+      "prompt": "着绍什好手晚介早晚。绍你再小会。么谢项型好谁！好再绍目你着绍",
+      "text": "型。",
+      "tokens": [
+        14,
+        3
+      ],
+      "stop_reason": "context",
+      "forward_tokens": 32,
+      "checked_mac_results": 4768,
+      "fast_cycles": 1993215,
+      "cpu_cycles": 2893807,
+      "full_inference_speedup": 1.4518288293034118,
+      "accelerator_cycles": 21120
+    }
+  ]
+}

@@ -1,0 +1,52 @@
+{
+  "seed": 11,
+  "steps": 600,
+  "loss": 0.0033988134771004213,
+  "parameters": 3744,
+  "vocab_size": 37,
+  "training_pairs": 8,
+  "memorized_exact": 8,
+  "scope": "Toy training-set reconstruction only; no held-out language capability claim.",
+  "examples": [
+    {
+      "prompt": "你好：",
+      "expected": "你好！",
+      "generated": "你好！"
+    },
+    {
+      "prompt": "你是谁：",
+      "expected": "我是小助手。",
+      "generated": "我是小助手。"
+    },
+    {
+      "prompt": "再见：",
+      "expected": "再见！",
+      "generated": "再见！"
+    },
+    {
+      "prompt": "谢谢：",
+      "expected": "不客气。",
+      "generated": "不客气。"
+    },
+    {
+      "prompt": "早上好：",
+      "expected": "早上好！",
+      "generated": "早上好！"
+    },
+    {
+      "prompt": "晚上好：",
+      "expected": "晚上好！",
+      "generated": "晚上好！"
+    },
+    {
+      "prompt": "你会什么：",
+      "expected": "我会接着写字。",
+      "generated": "我会接着写字。"
+    },
+    {
+      "prompt": "介绍项目：",
+      "expected": "这是小模型。",
+      "generated": "这是小模型。"
+    }
+  ]
+}

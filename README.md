@@ -4,6 +4,12 @@
 
 无需 FPGA 开发板、在线模型服务或 GPU。训练使用本机 NumPy；网页后端只传输输入和仿真输出，不代替 RISC-V 完成推理。
 
+## 新增：微型 Transformer 文本生成实验
+
+[tiny_transformer/README.md](tiny_transformer/README.md) 提供独立的 3,744 参数、单层单头字符级 Transformer：RISC-V 执行完整整数生成流程，现有 INT8 加速器承担线性投影，支持 KV 缓存及词表输出分块。它用于八组短句的训练集重现与软硬件验证，不是通用问答模型。
+
+在项目根目录运行 `make -C tiny_transformer serve`，打开 **http://127.0.0.1:8766**；输入 `你好：` 或 `你是谁：`（含中文冒号）。运行 `make -C tiny_transformer test` 可比较 Python 参考、纯 RISC-V CPU 和加速器三条路径。原指令助手仍按下面方式运行。
+
 ## 快速运行
 
 当前电脑已经完成构建与验证：
