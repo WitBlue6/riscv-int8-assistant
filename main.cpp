@@ -33,7 +33,7 @@ int main(int argc, char** argv) {
     }
     top->host_we=0;tick();top->resetn=1;
     uint64_t clocks=0;
-    while(!context.gotFinish()&&!top->finished&&!top->trap&&clocks<30000000){tick();clocks++;}
+    while(!context.gotFinish()&&!top->finished&&!top->trap&&clocks<2000000000ull){tick();clocks++;}
     int rc=top->finished?(int)top->exit_code:3;
     if(top->trap){std::cerr<<"CPU trap after "<<clocks<<" cycles\n";rc=4;}
     if(!top->finished&&!top->trap)std::cerr<<"Simulation timeout\n";

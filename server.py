@@ -34,13 +34,13 @@ class Handler(BaseHTTPRequestHandler):
             if not 0<length<=4096:raise ValueError('请求长度不正确')
             data=json.loads(self.rfile.read(length))
             if not isinstance(data,dict):raise ValueError('请求需要是 JSON 对象')
-            prompt=data.get('prompt');kind=data.get('mode','transformer')
+            prompt=data.get('prompt');kind=data.get('mode','checked')
             original=prompt;prompt,unknown=prepare_prompt(prompt)
-            if kind not in ['transformer','fast','software']:raise ValueError('无效运行模式')
+            if kind not in ['checked','fast','cpu_attention','cpu']:raise ValueError('无效运行模式')
             if not LOCK.acquire(blocking=False):self.respond(429,{'error':'仿真正在运行'});return
             try:
                 started=time.perf_counter()
-                p=subprocess.run([str(ROOT.parent/'build/obj/Vsoc'),'+firmware='+str(ROOT/f'build/{kind}.hex'),'--text',prompt],capture_output=True,text=True,timeout=30)
+                p=subprocess.run([str(ROOT/'build/obj/Vsoc'),'+firmware='+str(ROOT/f'build/{kind}.hex'),'+weights='+str(ROOT/'external.hex'),'+ext_latency=3','--text',prompt],capture_output=True,text=True,timeout=120)
                 try:d=json.loads(p.stdout)
                 except json.JSONDecodeError:raise RuntimeError('仿真未输出有效结果')
                 if p.returncode:
@@ -57,6 +57,6 @@ class Handler(BaseHTTPRequestHandler):
         except (RuntimeError,OSError) as e:self.respond(500,{'error':str(e)})
 if __name__=='__main__':
     import argparse
-    parser=argparse.ArgumentParser();parser.add_argument('--port',type=int,default=8766);args=parser.parse_args()
-    print(f'Tiny Transformer RTL: http://127.0.0.1:{args.port}',flush=True)
+    parser=argparse.ArgumentParser();parser.add_argument('--port',type=int,default=8767);args=parser.parse_args()
+    print(f'Transformer SoC: http://127.0.0.1:{args.port}',flush=True)
     ThreadingHTTPServer(('127.0.0.1',args.port),Handler).serve_forever()

@@ -1,8 +1,8 @@
 {
   "seed": 11,
-  "steps": 600,
-  "loss": 0.0033988134771004213,
-  "parameters": 3744,
+  "steps": 200,
+  "loss": 0.0007356748326261702,
+  "parameters": 285312,
   "vocab_size": 37,
   "training_pairs": 8,
   "memorized_exact": 8,

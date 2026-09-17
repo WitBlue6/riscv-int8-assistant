@@ -1,5 +1,5 @@
 // Four signed INT8 MAC lanes, INT32 accumulator, memory-mapped local buffers.
-module int8_accel (
+module tiled_fc (
     input wire clk, input wire resetn,
     input wire req, input wire [15:0] addr,
     input wire [31:0] wdata, input wire [3:0] wstrb,
@@ -16,6 +16,8 @@ module int8_accel (
     reg signed [31:0] lane_sum, next_acc;
     reg signed [15:0] product;
     integer lane, j, wi;
+    reg partial_valid;
+    reg [31:0] partial_rows;
 
     always @* begin
         lane_sum = 0; product = 0;
@@ -47,6 +49,7 @@ module int8_accel (
             n <= 0; m <= 0; relu_en <= 0;
             row <= 0; col <= 0; accumulator <= 0;
             cycles <= 0; completed <= 0;
+            partial_valid <= 0; partial_rows <= 0;
         end else begin
             if (busy) begin
                 cycles <= cycles + 1;
@@ -57,8 +60,10 @@ module int8_accel (
                     col <= 0;
                     if (row+1 >= m) begin
                         busy <= 0; done <= 1; completed <= completed+1;
+                        partial_valid <= !relu_en[0]; partial_rows <= m;
                     end else begin
-                        row <= row+1; accumulator <= biases[row+1];
+                        row <= row+1;
+                        accumulator <= relu_en[1] ? results[row+1] : biases[row+1];
                     end
                 end else begin
                     col <= col+4; accumulator <= next_acc;
@@ -74,10 +79,13 @@ module int8_accel (
                             if (wdata[1]) begin done<=0; error<=0; end
                             if (wdata[2]) completed<=0;
                             if (wdata[0]) begin
-                                if (n==0 || n>256 || m==0 || m>32 || relu_en>1) error<=1;
+                                if (n==0 || n>256 || m==0 || m>32 || relu_en>3 ||
+                                    (relu_en[1] && (!partial_valid || partial_rows!=m))) error<=1;
                                 else begin
                                     busy<=1; done<=0; cycles<=0;
-                                    row<=0; col<=0; accumulator<=biases[0];
+                                    row<=0; col<=0;
+                                    accumulator<=relu_en[1] ? results[0] : biases[0];
+                                    partial_valid<=0;
                                 end
                             end
                         end

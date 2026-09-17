@@ -8,7 +8,7 @@ from pathlib import Path
 import numpy as np
 
 ROOT = Path(__file__).resolve().parent
-D, F, T, S, W = 16, 32, 32, 32, 64
+D, F, T, S, W = 64, 2048, 32, 32, 64
 
 def truncdiv(x, n):
     a=np.asarray(x,dtype=np.int64)
@@ -52,7 +52,7 @@ def generate(prompt,m,max_new=12):
         v=np.clip(linear(norm,'v'),-127,127)
         keys.append(k);values.append(v)
         dots=np.asarray(keys)@q
-        buckets=np.minimum((int(dots.max())-dots)//64,1024)
+        buckets=np.minimum((int(dots.max())-dots)//128,1024)
         a=lut[buckets]; ctx=truncdiv(a@np.asarray(values),int(a.sum()))
         x=x+linear(ctx,'o')
         h=np.clip(linear(rms(x),'up'),0,127)

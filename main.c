@@ -3,6 +3,10 @@
 #include "weights.h"
 #define MMIO(a) (*(volatile uint32_t *)(uintptr_t)(a))
 #define A 0x20000000u
+#define AT 0x21000000u
+#ifndef USE_ATTENTION
+#define USE_ATTENTION 1
+#endif
 #ifndef NEW_TOKENS
 #define NEW_TOKENS 12
 #endif
@@ -10,13 +14,14 @@
 #define USE_ACCEL 1
 #endif
 #ifndef VERIFY_MAC
-#define VERIFY_MAC 1
+#define VERIFY_MAC 0
 #endif
 static int8_t packed[FF] __attribute__((aligned(4)));
 static int32_t keys[CONTEXT][DIM],values[CONTEXT][DIM];
 static uint32_t states[CONTEXT],projections[CONTEXT*7],state_count,projection_count;
 static int32_t score_steps[NEW_TOKENS][VOCAB],output_ids[NEW_TOKENS];
 static uint32_t mac_cycles,hardware_cycles,reference_cycles,mac_checks,failures;
+static uint32_t attention_cycles,attention_checks,attention_hw_cycles;
 static uint32_t cycle(void){uint32_t c;__asm__ volatile("rdcycle %0":"=r"(c)::"memory");return c;}
 static void putc_(char c){MMIO(0x10000000)=(uint8_t)c;}
 static void puts_(const char*s){while(*s)putc_(*s++);}
@@ -24,21 +29,29 @@ static void number(uint32_t n){char a[11];int i=0;do{a[i++]='0'+n%10;n/=10;}whil
 static void signed_(int32_t v){if(v<0){putc_('-');number(0u-(uint32_t)v);}else number(v);}
 static int32_t clip(int32_t v,int lo,int hi){return v<lo?lo:(v>hi?hi:v);}
 static uint32_t hash(uint32_t h,int32_t v){return (h^(uint32_t)v)*16777619u;}
-static uint32_t isqrt(uint32_t x){
-    uint32_t res=0,bit=1u<<30;
+static uint32_t isqrt(uint64_t x){
+    uint64_t res=0,bit=1ull<<62;
     while(bit>x)bit>>=2;
     while(bit){if(x>=res+bit){x-=res+bit;res=(res>>1)+bit;}else res>>=1;bit>>=2;}return res;
 }
 static void norm(const int32_t*x,int32_t*y){
-    uint32_t sum=0;for(int i=0;i<DIM;i++)sum+=(uint32_t)(x[i]*x[i]);
+    uint64_t sum=0;for(int i=0;i<DIM;i++)sum+=(uint64_t)((int64_t)x[i]*x[i]);
     int32_t den=(int32_t)isqrt(sum/DIM);if(!den)den=1;
     for(int i=0;i<DIM;i++)y[i]=clip(x[i]*32/den,-127,127);
 }
-#if USE_ACCEL
+#if USE_ACCEL || USE_ATTENTION
 static void upload(uint32_t dst,const int8_t*src,int n){
     typedef uint32_t word __attribute__((__may_alias__));
     const word*p=(const word*)(const void*)src;
     for(int i=0;i<n/4;i++)MMIO(dst+4*i)=p[i];
+}
+#endif
+#if USE_ACCEL || USE_ATTENTION
+static void wait_done(uint32_t base){
+    uint32_t start=cycle();
+    while(!(MMIO(base+4)&2)){
+        if((MMIO(base+4)&4)||cycle()-start>1000000u){puts_("{\"error\":\"hardware timeout/error\"}\n");MMIO(0x10000004)=3;while(1){}}
+    }
 }
 #endif
 static void linear(const int32_t*x,const int8_t*w,int n,int m,int32_t*y){
@@ -48,15 +61,16 @@ static void linear(const int32_t*x,const int8_t*w,int n,int m,int32_t*y){
         int rows=m-base<32?m-base:32;int32_t raw[32];
 #if USE_ACCEL
         uint32_t begin=cycle();
-        upload(A+0x1000,packed,n);upload(A+0x2000,w+base*n,n*rows);
-        for(int r=0;r<rows;r++)MMIO(A+0x4000+4*r)=0;
-        MMIO(A+8)=n;MMIO(A+12)=rows;MMIO(A+16)=0;MMIO(A)=3;
-        uint32_t wait_start=cycle();
-        while(!(MMIO(A+4)&2)){
-            if((MMIO(A+4)&4)||cycle()-wait_start>1000000u){puts_("{\"error\":\"accelerator timeout/error\"}\n");MMIO(0x10000004)=3;while(1){}}
+        for(int first=0;first<n;first+=256){
+            int width=n-first<256?n-first:256;
+            upload(A+0x1000,packed+first,width);
+            for(int r=0;r<rows;r++)upload(A+0x2000+r*width,w+(base+r)*n+first,width);
+            if(first==0)for(int r=0;r<rows;r++)MMIO(A+0x4000+4*r)=0;
+            MMIO(A+8)=width;MMIO(A+12)=rows;MMIO(A+16)=first?2:0;MMIO(A)=3;
+            wait_done(A);mac_cycles+=MMIO(A+0x14);
         }
         for(int r=0;r<rows;r++)raw[r]=(int32_t)MMIO(A+0x5000+4*r);
-        mac_cycles+=MMIO(A+0x14);hardware_cycles+=cycle()-begin;
+        hardware_cycles+=cycle()-begin;
 #endif
 #if VERIFY_MAC || !USE_ACCEL
         uint32_t ref_start=cycle();
@@ -83,12 +97,46 @@ static void forward(int token,int pos,int32_t*logits){
         keys[pos][i]=k[i];values[pos][i]=v[i];
     }
     int32_t dots[CONTEXT],amax=-2147483647;uint32_t attention[CONTEXT],den=0;
+#if USE_ATTENTION
+    uint32_t att_start=cycle();
+    // Upload only the new K/V vectors: all history remains in the RTL cache.
+    for(int i=0;i<DIM;i++)packed[i]=(int8_t)k[i];upload(AT+0x1100,packed,DIM);
+    for(int i=0;i<DIM;i++)packed[i]=(int8_t)v[i];upload(AT+0x1200,packed,DIM);
+    MMIO(AT)=1;wait_done(AT);attention_cycles+=MMIO(AT+0x10);
+    for(int i=0;i<DIM;i++)packed[i]=(int8_t)q[i];upload(AT+0x1000,packed,DIM);
+    MMIO(AT)=2;wait_done(AT);attention_cycles+=MMIO(AT+0x10);
+    for(int j=0;j<=pos;j++)dots[j]=(int32_t)MMIO(AT+0x2000+4*j);
+    attention_hw_cycles+=cycle()-att_start;
+#endif
+#if VERIFY_MAC || !USE_ATTENTION
     for(int j=0;j<=pos;j++){
-        int32_t a=0;for(int i=0;i<DIM;i++)a+=q[i]*keys[j][i];dots[j]=a;if(a>amax)amax=a;
+        int32_t a=0;for(int i=0;i<DIM;i++)a+=q[i]*keys[j][i];
+#if USE_ATTENTION
+        attention_checks++;if(dots[j]!=a)failures++;
+#else
+        dots[j]=a;
+#endif
     }
-    for(int j=0;j<=pos;j++){int b=(amax-dots[j])/64;if(b>1024)b=1024;attention[j]=wt_exp_lut[b];den+=attention[j];}
+#endif
+    for(int j=0;j<=pos;j++)if(dots[j]>amax)amax=dots[j];
+    for(int j=0;j<=pos;j++){int b=(amax-dots[j])/128;if(b>1024)b=1024;attention[j]=wt_exp_lut[b];den+=attention[j];}
+#if USE_ATTENTION
+    att_start=cycle();
+    for(int j=0;j<=pos;j+=2)MMIO(AT+0x1300+j*2)=attention[j]|((j+1<=pos?attention[j+1]:0)<<16);
+    MMIO(AT)=3;wait_done(AT);attention_cycles+=MMIO(AT+0x10);
+    for(int i=0;i<DIM;i++)ctx[i]=(int32_t)MMIO(AT+0x3000+4*i);
+    attention_hw_cycles+=cycle()-att_start;
+#endif
     for(int i=0;i<DIM;i++){
-        int32_t a=0;for(int j=0;j<=pos;j++)a+=(int32_t)attention[j]*values[j][i];ctx[i]=a/(int32_t)den;
+#if VERIFY_MAC || !USE_ATTENTION
+        int32_t a=0;for(int j=0;j<=pos;j++)a+=(int32_t)attention[j]*values[j][i];
+#if USE_ATTENTION
+        attention_checks++;if(ctx[i]!=a)failures++;
+#else
+        ctx[i]=a;
+#endif
+#endif
+        ctx[i]/=(int32_t)den;
     }
     linear(ctx,wt_o,DIM,DIM,tmp);for(int i=0;i<DIM;i++)x[i]+=tmp[i];
     norm(x,z);linear(z,wt_up,DIM,FF,h);for(int i=0;i<FF;i++)h[i]=clip(h[i],0,127);
@@ -121,6 +169,7 @@ int main(void){
         if(token<0){puts_("{\"error\":\"invalid UTF-8\"}\n");return 2;}
         if(len>=CONTEXT-1){puts_("{\"error\":\"prompt too long\"}\n");return 2;}ids[len++]=token;
     }
+    MMIO(AT)=4;MMIO(AT+8)=DIM;
     uint32_t begin=cycle();int32_t logits[VOCAB];
     for(int i=0;i<len;i++)forward(ids[i],i,logits);
     int count=0;const char*reason="max_new";
@@ -142,6 +191,11 @@ int main(void){
     puts_(",\"match\":");puts_((USE_ACCEL&&VERIFY_MAC)?(failures?"false":"true"):"null");puts_(",\"mac_checks\":");number(mac_checks);
     puts_(",\"accelerator_cycles\":");number(mac_cycles);puts_(",\"hardware_linear_cycles\":");number(hardware_cycles);
     puts_(",\"software_linear_cycles\":");number(reference_cycles);puts_(",\"total_cycles\":");number(total);
-    puts_(",\"completed\":");number(MMIO(A+0x18));puts_(",\"use_accelerator\":");number(USE_ACCEL);puts_("}\n");
+    puts_(",\"completed\":");number(MMIO(A+0x18));puts_(",\"use_accelerator\":");number(USE_ACCEL);puts_(",\"attention_cycles\":");number(attention_cycles);
+    puts_(",\"attention_hw_cycles\":");number(attention_hw_cycles);
+    puts_(",\"attention_checks\":");number(attention_checks);
+    puts_(",\"attention_jobs\":");number(MMIO(AT+0x14));
+    puts_(",\"kv_tokens\":");number(MMIO(AT+0xc));
+    puts_(",\"external_reads\":");number(MMIO(0x10000008));puts_("}\n");
     return failures?1:0;
 }
